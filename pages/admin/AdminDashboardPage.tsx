@@ -13,14 +13,25 @@ import { formatDistanceToNow } from 'date-fns';
 
 const AdminDashboardPage: React.FC = () => {
   const { tickets, assignTicket, getOfficers, updateTicketOverdueStatus } = useData();
+  // state to handle assigning tickets 
   const [selectedTicketToAssign, setSelectedTicketToAssign] = useState<Ticket | null>(null);
   const [selectedOfficerId, setSelectedOfficerId] = useState<string>('');
+   // pagination states 
+  const [unassignedPage, setUnassignedPage] = useState(1);
+  const [allTicketsPage, setAllTicketsPage] = useState(1);
+  const itemsPerPage = 10;
 
+// update overdue ticket status whenever tickets change 
   React.useEffect(() => {
     updateTicketOverdueStatus();
   }, [tickets, updateTicketOverdueStatus]);
 
 
+  // reset pagination when new ticket data is loaded 
+  React.useEffect(() => {
+  setUnassignedPage(1);
+  setAllTicketsPage(1);
+}, [tickets]);
   const officers = useMemo(() => getOfficers(), [getOfficers]);
 
   const stats = useMemo(() => {
@@ -37,11 +48,13 @@ const AdminDashboardPage: React.FC = () => {
     };
   }, [tickets]);
 
+   // get unassigned tickets (NEW or OVERDUE and not assigned yet)
   const unassignedTickets = useMemo(() => {
     return tickets.filter(ticket => ticket.status === TicketStatus.NEW || ticket.status === TicketStatus.OVERDUE && !ticket.assignedToUserId)
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [tickets]);
 
+  // called when user clicks "Assign" button
   const handleAssignClick = (ticket: Ticket) => {
     setSelectedTicketToAssign(ticket);
     if (officers.length > 0) {
@@ -100,8 +113,13 @@ const AdminDashboardPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {unassignedTickets.map(ticket => (
-                  <tr key={ticket.id} className="hover:bg-gray-50">
+                {/* only show 10 per page using slice */}
+               {unassignedTickets
+                .slice((unassignedPage - 1) * itemsPerPage, unassignedPage * itemsPerPage)
+                .map(ticket => (
+               <tr key={ticket.id} className="hover:bg-gray-50">
+
+     {/* Display each column of tickets here....*/}           
   <td className="px-4 py-3 whitespace-nowrap">
     <div className="text-sm font-medium text-gray-900">{ticket.requesterName}</div>
     <div className="text-xs text-gray-500">{ticket.requesterEmail}</div>
@@ -129,13 +147,37 @@ const AdminDashboardPage: React.FC = () => {
     </Button>
   </td>
 </tr>
-
-                ))}
+          ))}
               </tbody>
             </table>
           </div>
         )}
       </Card>
+{/* Pagination controls for unassigned Tickets*/}
+      <div className="flex justify-between items-center mt-4">
+  <Button
+    variant="secondary"
+    onClick={() => setUnassignedPage(prev => Math.max(prev - 1, 1))}
+    disabled={unassignedPage === 1}
+  >
+    Previous
+  </Button>
+  <span className="text-sm text-gray-600">
+    Page {unassignedPage} of {Math.ceil(unassignedTickets.length / itemsPerPage)}
+  </span>
+  <Button
+    variant="secondary"
+    onClick={() =>
+      setUnassignedPage(prev =>
+        prev < Math.ceil(unassignedTickets.length / itemsPerPage) ? prev + 1 : prev
+      )
+    }
+    disabled={unassignedPage === Math.ceil(unassignedTickets.length / itemsPerPage)}
+  >
+    Next
+  </Button>
+</div>
+
 
       <Card title="All Tickets">
         {tickets.length === 0 ? (
@@ -155,7 +197,9 @@ const AdminDashboardPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {tickets.map(ticket => (
+                 {tickets
+              .slice((allTicketsPage - 1) * itemsPerPage, allTicketsPage * itemsPerPage)
+              .map(ticket => (
                   <tr key={ticket.id} className="hover:bg-gray-50">
   <td className="px-4 py-3 whitespace-nowrap">
     <div className="text-sm font-medium text-gray-900">{ticket.requesterName}</div>
@@ -188,6 +232,31 @@ const AdminDashboardPage: React.FC = () => {
           </div>
         )}
       </Card>
+
+       {/* Pagination for All Tickets */}
+        <div className="flex justify-between items-center mt-4">
+  <Button
+    variant="secondary"
+    onClick={() => setAllTicketsPage(prev => Math.max(prev - 1, 1))}
+    disabled={allTicketsPage === 1}
+  >
+    Previous
+  </Button>
+  <span className="text-sm text-gray-600">
+    Page {allTicketsPage} of {Math.ceil(tickets.length / itemsPerPage)}
+  </span>
+  <Button
+    variant="secondary"
+    onClick={() =>
+      setAllTicketsPage(prev =>
+        prev < Math.ceil(tickets.length / itemsPerPage) ? prev + 1 : prev
+      )
+    }
+    disabled={allTicketsPage === Math.ceil(tickets.length / itemsPerPage)}
+  >
+    Next
+  </Button>
+</div>
 
       {/* Assignment Modal */}
       <Modal isOpen={!!selectedTicketToAssign} onClose={() => setSelectedTicketToAssign(null)} title="Assign Ticket">
