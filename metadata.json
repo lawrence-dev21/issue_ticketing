@@ -1,0 +1,5 @@
+
+{
+  "name": "Ministry of Agriculture ICT Ticketing System",
+  "description": "A web application for logging, tracking, and resolving ICT issues within the Ministry of Agriculture. Features public ticket submission, admin dashboard for assignment and user management, and officer dashboard for ticket resolution and delegation."
+}
