@@ -20,6 +20,12 @@ const AdminDashboardPage: React.FC = () => {
   const [unassignedPage, setUnassignedPage] = useState(1);
   const [allTicketsPage, setAllTicketsPage] = useState(1);
   const itemsPerPage = 10;
+  //search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchAllQuery, setSearchAllQuery] = useState('');
+  const[statusFilter, setStatusFilter] = useState(''); // for unassigned 
+  const[allStatusFilter, setAllStatusFilter] = useState(''); // for all tickets 
+
 
 // update overdue ticket status whenever tickets change 
   React.useEffect(() => {
@@ -69,6 +75,29 @@ const AdminDashboardPage: React.FC = () => {
       setSelectedOfficerId('');
     }
   };
+  // Filtered unassigned tickets by search query
+  const filteredUnassignedTickets = useMemo(() => {
+  return unassignedTickets.filter(ticket =>
+    (statusFilter === '' || ticket.status === statusFilter) &&
+    (
+      ticket.requesterName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.issueDescription.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+}, [unassignedTickets, searchQuery, statusFilter]);
+
+// Filtered all tickets by search query
+const filteredAllTickets = useMemo(() => {
+  return tickets.filter(ticket =>
+    (allStatusFilter === '' || ticket.status === allStatusFilter) &&
+    (
+      ticket.requesterName.toLowerCase().includes(searchAllQuery.toLowerCase()) ||
+      ticket.phone?.toLowerCase().includes(searchAllQuery.toLowerCase()) ||
+      ticket.issueDescription.toLowerCase().includes(searchAllQuery.toLowerCase())
+    )
+  );
+}, [tickets, searchAllQuery, allStatusFilter]);
 
   const getStatusBadgeColor = (status: TicketStatus) => {
     switch (status) {
@@ -94,6 +123,28 @@ const AdminDashboardPage: React.FC = () => {
         <StatsCard title="Overdue" value={stats.overdue} icon={<AlertTriangleIcon size={24} />} colorClass="bg-red-500" />
       </div>
 
+      {/* search input fields*/}
+      <div className="flex justify-between mb-2">
+  <select
+    value={statusFilter}
+    onChange={(e) => setStatusFilter(e.target.value)}
+    className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+  >
+    <option value="">All Statuses</option>
+    {Object.values(TicketStatus).map(status => (
+      <option key={status} value={status}>{status}</option>
+    ))}
+  </select>
+
+  <input
+    type="text"
+    placeholder="Search by requester, phone, issue..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+  />
+</div>
+
       {/* Unassigned Tickets Table */}
       <Card title="Tickets Awaiting Assignment">
         {unassignedTickets.length === 0 ? (
@@ -114,7 +165,7 @@ const AdminDashboardPage: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {/* only show 10 per page using slice */}
-               {unassignedTickets
+               {filteredUnassignedTickets
                 .slice((unassignedPage - 1) * itemsPerPage, unassignedPage * itemsPerPage)
                 .map(ticket => (
                <tr key={ticket.id} className="hover:bg-gray-50">
@@ -152,6 +203,7 @@ const AdminDashboardPage: React.FC = () => {
             </table>
           </div>
         )}
+
       </Card>
 {/* Pagination controls for unassigned Tickets*/}
       <div className="flex justify-between items-center mt-4">
@@ -163,7 +215,7 @@ const AdminDashboardPage: React.FC = () => {
     Previous
   </Button>
   <span className="text-sm text-gray-600">
-    Page {unassignedPage} of {Math.ceil(unassignedTickets.length / itemsPerPage)}
+    Page {unassignedPage} of {Math.ceil(filteredUnassignedTickets.length / itemsPerPage)}
   </span>
   <Button
     variant="secondary"
@@ -178,6 +230,27 @@ const AdminDashboardPage: React.FC = () => {
   </Button>
 </div>
 
+    {/* search input fields*/}
+    <div className="flex justify-between mb-2">
+  <select
+    value={allStatusFilter}
+    onChange={(e) => setAllStatusFilter(e.target.value)}
+    className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+  >
+    <option value="">All Statuses</option>
+    {Object.values(TicketStatus).map(status => (
+      <option key={status} value={status}>{status}</option>
+    ))}
+  </select>
+
+  <input
+    type="text"
+    placeholder="Search all tickets..."
+    value={searchAllQuery}
+    onChange={(e) => setSearchAllQuery(e.target.value)}
+    className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+  />
+</div>
 
       <Card title="All Tickets">
         {tickets.length === 0 ? (
@@ -197,7 +270,7 @@ const AdminDashboardPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                 {tickets
+                 {filteredAllTickets
               .slice((allTicketsPage - 1) * itemsPerPage, allTicketsPage * itemsPerPage)
               .map(ticket => (
                   <tr key={ticket.id} className="hover:bg-gray-50">
@@ -243,16 +316,16 @@ const AdminDashboardPage: React.FC = () => {
     Previous
   </Button>
   <span className="text-sm text-gray-600">
-    Page {allTicketsPage} of {Math.ceil(tickets.length / itemsPerPage)}
+    Page {allTicketsPage} of {Math.ceil(filteredAllTickets.length / itemsPerPage)}
   </span>
   <Button
     variant="secondary"
     onClick={() =>
       setAllTicketsPage(prev =>
-        prev < Math.ceil(tickets.length / itemsPerPage) ? prev + 1 : prev
+        prev < Math.ceil(filteredAllTickets.length / itemsPerPage) ? prev + 1 : prev
       )
     }
-    disabled={allTicketsPage === Math.ceil(tickets.length / itemsPerPage)}
+    disabled={allTicketsPage === Math.ceil(filteredAllTickets.length / itemsPerPage)}
   >
     Next
   </Button>
